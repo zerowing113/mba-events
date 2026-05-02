@@ -28,3 +28,107 @@ header p {
   color: #555;
   font-size: 0.95rem;
 }
+
+/* Status messages */
+.status {
+  color: #555;
+  padding: 2rem 0;
+}
+.status.error { color: #c0392b; }
+.last-updated { font-size: 0.8rem; color: #999; margin-bottom: 1rem; }
+
+/* Event list */
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+/* Event card */
+.event-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  transition: box-shadow 0.15s;
+}
+.event-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.event-card.past {
+  opacity: 0.45;
+  background: #f5f5f5;
+}
+
+/* Card meta row */
+.event-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.event-school-badge {
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.event-school-name {
+  font-size: 0.82rem;
+  color: #555;
+  flex: 1;
+}
+.event-format {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.tag-virtual    { background: #e8f4fd; color: #1a6fa8; }
+.tag-in-person  { background: #eaf7ee; color: #1a7a3c; }
+
+/* Card body */
+.event-title {
+  font-size: 1.05rem;
+  margin: 0 0 0.3rem;
+  font-weight: 600;
+}
+.event-datetime {
+  font-size: 0.85rem;
+  color: #444;
+  margin: 0 0 0.5rem;
+}
+.event-tz { color: #999; font-size: 0.8rem; }
+.event-description {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+/* Actions */
+.event-actions { display: flex; gap: 0.5rem; }
+.btn-register {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.btn-register:hover { background: #333; }
+
+/* Mobile */
+@media (max-width: 480px) {
+  body { padding: 0 0.75rem; }
+  .event-card { padding: 1rem; }
+  .event-title { font-size: 1rem; }
+}
