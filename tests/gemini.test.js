@@ -1,0 +1,68 @@
+import { test, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { fetchViaProxy, extractEvents } from '../gemini.js';
+
+let originalFetch;
+
+beforeEach(() => { originalFetch = globalThis.fetch; });
+afterEach(()  => { globalThis.fetch = originalFetch; });
+
+function mockFetch({ body, status = 200 }) {
+  globalThis.fetch = async (url, opts) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => body,
+    json: async () => JSON.parse(body),
+    _url: url,
+    _opts: opts,
+  });
+}
+
+test('fetchViaProxy routes through corsproxy.io with encoded URL', async () => {
+  let capturedUrl;
+  globalThis.fetch = async (url) => { capturedUrl = url; return { ok: true, text: async () => '<html/>' }; };
+  await fetchViaProxy('https://hbs.edu/events');
+  assert.ok(capturedUrl.startsWith('https://corsproxy.io/?'));
+  assert.ok(capturedUrl.includes(encodeURIComponent('https://hbs.edu/events')));
+});
+
+test('fetchViaProxy throws on HTTP error', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 503 });
+  await assert.rejects(() => fetchViaProxy('https://hbs.edu/events'), /503/);
+});
+
+const GEMINI_RESPONSE = JSON.stringify({
+  candidates: [{
+    content: { parts: [{ text: JSON.stringify([
+      { title: 'Info Session', school: 'Harvard Business School', date: '5/15/2026',
+        time: '18:00', timezone: 'America/New_York', format: 'Virtual',
+        description: 'Overview of HBS MBA program.', location: 'Online',
+        registrationUrl: 'https://hbs.edu/events' }
+    ]) }] }
+  }]
+});
+
+test('extractEvents returns parsed event array from valid Gemini response', async () => {
+  globalThis.fetch = async () => ({ ok: true, json: async () => JSON.parse(GEMINI_RESPONSE) });
+  const events = await extractEvents('fake-key', '<html>some events page</html>');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].title, 'Info Session');
+  assert.equal(events[0].school, 'Harvard Business School');
+});
+
+test('extractEvents returns empty array when Gemini returns non-JSON text', async () => {
+  const badResponse = JSON.stringify({
+    candidates: [{ content: { parts: [{ text: 'Sorry, I could not find any events.' }] } }]
+  });
+  globalThis.fetch = async () => ({ ok: true, json: async () => JSON.parse(badResponse) });
+  const events = await extractEvents('fake-key', '<html/>');
+  assert.deepEqual(events, []);
+});
+
+test('extractEvents throws clear message on 401 bad API key', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 401 });
+  await assert.rejects(
+    () => extractEvents('bad-key', '<html/>'),
+    /API key/
+  );
+});

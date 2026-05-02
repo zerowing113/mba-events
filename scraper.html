@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Scraper — MBA Events Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>MBA Events Tracker</h1>
+      <p>Upcoming M7 school events — info sessions, webinars, campus visits, and workshops.</p>
+    </header>
+    <nav class="site-nav">
+      <a href="index.html">Events</a>
+      <a href="scraper.html" class="active">Scraper</a>
+    </nav>
+    <main id="scraper-app">
+      <section class="api-key-section">
+        <h2>Gemini API Key</h2>
+        <p>Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>. Your key is stored only in your browser.</p>
+        <input type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+      </section>
+      <section class="scrape-section">
+        <button id="scrape-btn">Scrape M7 Events</button>
+      </section>
+      <section id="progress"></section>
+      <section id="results"></section>
+    </main>
+    <script type="module" src="scraper.js"></script>
+  </body>
+</html>
