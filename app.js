@@ -1,5 +1,6 @@
 import { fetchEvents } from './fetcher.js';
 import { filterEvents } from './filter.js';
+import { googleCalendarUrl, downloadIcs } from './calendar.js';
 
 const SCHOOL_BADGE = {
   'Harvard Business School':   { abbr: 'HBS',    color: '#A51C30' },
@@ -33,6 +34,13 @@ function renderCard(e) {
       <p class="event-description">${e.description}</p>
       <div class="event-actions">
         ${registerBtn}
+        <div class="cal-dropdown">
+          <button class="btn-cal-toggle" aria-haspopup="true">Add to Calendar ▾</button>
+          <ul class="cal-menu" hidden>
+            <li><a class="cal-option" href="${googleCalendarUrl(e)}" target="_blank" rel="noopener">Google Calendar</a></li>
+            <li><button class="cal-option cal-ics" data-key="${e.school}|${e.date}|${e.title}">Download .ics</button></li>
+          </ul>
+        </div>
       </div>
     </li>`;
 }
@@ -95,12 +103,36 @@ function renderEventList(panel) {
   panel.innerHTML = `
     <p class="last-updated">Last updated: ${updated}</p>
     <ul class="event-list">${filtered.map(renderCard).join('')}</ul>`;
+
+  panel.querySelectorAll('.btn-cal-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const menu = btn.nextElementSibling;
+      menu.hidden = !menu.hidden;
+    });
+  });
+
+  panel.querySelectorAll('.cal-ics').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [school, date, title] = btn.dataset.key.split('|');
+      const event = allEvents.find(e => e.school === school && e.date === date && e.title === title);
+      if (event) downloadIcs(event);
+      btn.closest('.cal-menu').hidden = true;
+    });
+  });
+
 }
 
 export function init() {
   const filtersPanel = document.getElementById('filters-panel');
   const eventsPanel  = document.getElementById('events-panel');
   eventsPanel.innerHTML = '<p class="status">Loading events…</p>';
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.cal-dropdown')) {
+      document.querySelectorAll('.cal-menu').forEach(m => { m.hidden = true; });
+    }
+  });
+
   fetchEvents()
     .then(events => {
       allEvents = events;
