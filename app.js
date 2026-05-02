@@ -1,6 +1,11 @@
 import { fetchEvents } from './fetcher.js';
 import { filterEvents } from './filter.js';
 import { googleCalendarUrl, downloadIcs } from './calendar.js';
+import { createStore } from './storage.js';
+
+const store = typeof localStorage !== 'undefined' ? createStore(localStorage) : createStore({
+  getItem: () => null, setItem: () => {}, removeItem: () => {},
+});
 
 const SCHOOL_BADGE = {
   'Harvard Business School':   { abbr: 'HBS',    color: '#A51C30' },
@@ -16,14 +21,19 @@ function isPast(dateStr) {
   return new Date(dateStr) < new Date('2026-05-02');
 }
 
+function eventKey(e) {
+  return `${e.school}|${e.date}|${e.title}`;
+}
+
 function renderCard(e) {
   const badge = SCHOOL_BADGE[e.school] ?? { abbr: e.school, color: '#555' };
   const past = isPast(e.date);
+  const saved = store.isSaved(eventKey(e));
   const registerBtn = e.registrationUrl
     ? `<a class="btn-register" href="${e.registrationUrl}" target="_blank" rel="noopener">Register</a>`
     : '';
   return `
-    <li class="event-card${past ? ' past' : ''}">
+    <li class="event-card${past ? ' past' : ''}${saved ? ' saved' : ''}">
       <div class="event-meta">
         <span class="event-school-badge" style="background:${badge.color}">${badge.abbr}</span>
         <span class="event-school-name">${e.school}</span>
@@ -33,6 +43,9 @@ function renderCard(e) {
       <p class="event-datetime">${e.date} &middot; ${e.time} <span class="event-tz">${e.timezone}</span></p>
       <p class="event-description">${e.description}</p>
       <div class="event-actions">
+        <button class="btn-save${saved ? ' is-saved' : ''}" data-key="${eventKey(e)}" title="${saved ? 'Remove from saved' : 'Save event'}">
+          ${saved ? '★' : '☆'}
+        </button>
         ${registerBtn}
         <div class="cal-dropdown">
           <button class="btn-cal-toggle" aria-haspopup="true">Add to Calendar ▾</button>
@@ -48,7 +61,7 @@ function renderCard(e) {
 const M7_SCHOOLS = Object.keys(SCHOOL_BADGE);
 
 let allEvents = [];
-let filterState = { schools: [], format: null };
+let filterState = { schools: [], format: null, savedOnly: false };
 
 function schoolCounts(events) {
   const counts = {};
@@ -77,6 +90,12 @@ function renderFilters(panel) {
             <span>${f}</span>
           </label>`).join('')}
       </div>
+      <div class="filter-group">
+        <label class="filter-label">
+          <input type="checkbox" id="saved-only" ${filterState.savedOnly ? 'checked' : ''}>
+          <span>★ Saved only</span>
+        </label>
+      </div>
     </div>`;
 
   panel.querySelectorAll('.filter-school').forEach(cb =>
@@ -91,10 +110,16 @@ function renderFilters(panel) {
       renderEventList(document.getElementById('events-panel'));
     })
   );
+
+  panel.querySelector('#saved-only').addEventListener('change', e => {
+    filterState.savedOnly = e.target.checked;
+    renderEventList(document.getElementById('events-panel'));
+  });
 }
 
 function renderEventList(panel) {
-  const filtered = filterEvents(allEvents, filterState);
+  let filtered = filterEvents(allEvents, filterState);
+  if (filterState.savedOnly) filtered = filtered.filter(e => store.isSaved(eventKey(e)));
   const updated = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
   if (filtered.length === 0) {
     panel.innerHTML = `<p class="status">No events match your filters.</p>`;
@@ -103,6 +128,19 @@ function renderEventList(panel) {
   panel.innerHTML = `
     <p class="last-updated">Last updated: ${updated}</p>
     <ul class="event-list">${filtered.map(renderCard).join('')}</ul>`;
+
+  panel.querySelectorAll('.btn-save').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      if (store.isSaved(key)) {
+        store.unsave(key);
+      } else {
+        store.save(key);
+      }
+      renderFilters(document.getElementById('filters-panel'));
+      renderEventList(panel);
+    });
+  });
 
   panel.querySelectorAll('.btn-cal-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
