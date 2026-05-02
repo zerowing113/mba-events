@@ -1,4 +1,5 @@
 import { fetchEvents } from './fetcher.js';
+import { filterEvents } from './filter.js';
 
 const SCHOOL_BADGE = {
   'Harvard Business School':   { abbr: 'HBS',    color: '#A51C30' },
@@ -36,37 +37,80 @@ function renderCard(e) {
     </li>`;
 }
 
-function renderLoading(app) {
-  app.innerHTML = '<p class="status">Loading events…</p>';
+const M7_SCHOOLS = Object.keys(SCHOOL_BADGE);
+
+let allEvents = [];
+let filterState = { schools: [], format: null };
+
+function schoolCounts(events) {
+  const counts = {};
+  for (const e of events) counts[e.school] = (counts[e.school] ?? 0) + 1;
+  return counts;
 }
 
-function renderError(app, err) {
-  app.innerHTML = `<p class="status error">Failed to load events. Please try again later.</p>`;
-  console.error(err);
+function renderFilters(panel) {
+  const counts = schoolCounts(allEvents);
+  panel.innerHTML = `
+    <div class="filters">
+      <div class="filter-group">
+        <h3 class="filter-heading">School</h3>
+        ${M7_SCHOOLS.map(s => `
+          <label class="filter-label">
+            <input type="checkbox" class="filter-school" value="${s}" ${filterState.schools.includes(s) ? 'checked' : ''}>
+            <span>${s}</span>
+            <span class="filter-count">${counts[s] ?? 0}</span>
+          </label>`).join('')}
+      </div>
+      <div class="filter-group">
+        <h3 class="filter-heading">Format</h3>
+        ${['All', 'Virtual', 'In-Person'].map(f => `
+          <label class="filter-label">
+            <input type="radio" name="format" value="${f}" ${(f === 'All' && filterState.format === null) || filterState.format === f ? 'checked' : ''}>
+            <span>${f}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+
+  panel.querySelectorAll('.filter-school').forEach(cb =>
+    cb.addEventListener('change', () => {
+      filterState.schools = [...panel.querySelectorAll('.filter-school:checked')].map(c => c.value);
+      renderEventList(document.getElementById('events-panel'));
+    })
+  );
+  panel.querySelectorAll('input[name="format"]').forEach(radio =>
+    radio.addEventListener('change', () => {
+      filterState.format = radio.value === 'All' ? null : radio.value;
+      renderEventList(document.getElementById('events-panel'));
+    })
+  );
 }
 
-function renderEvents(app, events) {
+function renderEventList(panel) {
+  const filtered = filterEvents(allEvents, filterState);
   const updated = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
-
-  if (events.length === 0) {
-    app.innerHTML = `<p class="status">No upcoming events found.</p>`;
+  if (filtered.length === 0) {
+    panel.innerHTML = `<p class="status">No events match your filters.</p>`;
     return;
   }
-
-  app.innerHTML = `
+  panel.innerHTML = `
     <p class="last-updated">Last updated: ${updated}</p>
-    <ul class="event-list">
-      ${events.map(renderCard).join('')}
-    </ul>
-  `;
+    <ul class="event-list">${filtered.map(renderCard).join('')}</ul>`;
 }
 
 export function init() {
-  const app = document.getElementById('app');
-  renderLoading(app);
+  const filtersPanel = document.getElementById('filters-panel');
+  const eventsPanel  = document.getElementById('events-panel');
+  eventsPanel.innerHTML = '<p class="status">Loading events…</p>';
   fetchEvents()
-    .then(events => renderEvents(app, events))
-    .catch(err => renderError(app, err));
+    .then(events => {
+      allEvents = events;
+      renderFilters(filtersPanel);
+      renderEventList(eventsPanel);
+    })
+    .catch(err => {
+      eventsPanel.innerHTML = `<p class="status error">Failed to load events. Please try again later.</p>`;
+      console.error(err);
+    });
 }
 
 if (typeof document !== 'undefined') {

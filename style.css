@@ -29,6 +29,47 @@ header p {
   font-size: 0.95rem;
 }
 
+/* Layout */
+#app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  #app { grid-template-columns: 1fr; }
+}
+
+/* Filters panel */
+.filters { padding-bottom: 1rem; }
+.filter-group { margin-bottom: 1.25rem; }
+.filter-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  margin: 0 0 0.5rem;
+}
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #333;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+.filter-label input { flex-shrink: 0; cursor: pointer; }
+.filter-label span:nth-child(2) { flex: 1; }
+.filter-count {
+  font-size: 0.75rem;
+  color: #aaa;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
 /* Status messages */
 .status {
   color: #555;
