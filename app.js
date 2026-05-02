@@ -18,7 +18,9 @@ const SCHOOL_BADGE = {
 };
 
 function isPast(dateStr) {
-  return new Date(dateStr) < new Date('2026-05-02');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(dateStr) < today;
 }
 
 function eventKey(e) {
