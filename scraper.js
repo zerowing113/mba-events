@@ -1,4 +1,4 @@
-import { fetchViaProxy, extractEvents } from './gemini.js';
+import { extractEventsFromUrl } from './gemini.js';
 import { eventsToCSV, mergeEvents, downloadCSV } from './csvexport.js';
 import { parseEvents } from './fetcher.js';
 
@@ -121,8 +121,7 @@ async function runScrape() {
     const school = M7_SCHOOLS[i];
     setProgress(`<p class="status">Scraping ${school.name}… (${i + 1} of ${M7_SCHOOLS.length})</p>`);
     try {
-      const html = await fetchViaProxy(school.url);
-      const events = await extractEvents(apiKey, html);
+      const events = await extractEventsFromUrl(apiKey, school.url);
       results.push({ school: school.name, events, error: null });
     } catch (err) {
       results.push({ school: school.name, events: [], error: err.message });

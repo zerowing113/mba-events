@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchViaProxy, extractEvents } from '../gemini.js';
+import { fetchViaProxy, extractEvents, extractEventsFromUrl } from '../gemini.js';
 
 let originalFetch;
 
@@ -63,6 +63,32 @@ test('extractEvents throws clear message on 401 bad API key', async () => {
   globalThis.fetch = async () => ({ ok: false, status: 401 });
   await assert.rejects(
     () => extractEvents('bad-key', '<html/>'),
+    /API key/
+  );
+});
+
+test('extractEventsFromUrl sends url_context tool and URL in request body', async () => {
+  let capturedBody;
+  globalThis.fetch = async (url, opts) => {
+    capturedBody = JSON.parse(opts.body);
+    return { ok: true, json: async () => JSON.parse(GEMINI_RESPONSE) };
+  };
+  await extractEventsFromUrl('fake-key', 'https://hbs.edu/events');
+  assert.ok(capturedBody.tools?.some(t => 'url_context' in t), 'url_context tool missing');
+  assert.ok(capturedBody.contents[0].parts[0].text.includes('https://hbs.edu/events'), 'URL not in prompt');
+});
+
+test('extractEventsFromUrl returns parsed events from valid Gemini response', async () => {
+  globalThis.fetch = async () => ({ ok: true, json: async () => JSON.parse(GEMINI_RESPONSE) });
+  const events = await extractEventsFromUrl('fake-key', 'https://hbs.edu/events');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].title, 'Info Session');
+});
+
+test('extractEventsFromUrl throws clear message on 401 bad API key', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 401 });
+  await assert.rejects(
+    () => extractEventsFromUrl('bad-key', 'https://hbs.edu/events'),
     /API key/
   );
 });
