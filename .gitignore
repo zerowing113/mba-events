@@ -1,3 +1,4 @@
 .claude/
 gemini_api_key.md
 diagnose-gemini.js
+node_modules/

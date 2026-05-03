@@ -20,7 +20,7 @@ Each element must have exactly these fields:
 
 If no events are found return an empty array [].`;
 
-const EXTRACTION_PROMPT = `Extract all upcoming MBA information events from the following HTML.\n${EVENT_SCHEMA}\n\nHTML:\n`;
+const EXTRACTION_PROMPT = `Extract all upcoming MBA information events from the following page content.\n${EVENT_SCHEMA}\n\nContent:\n`;
 
 function geminiError(status) {
   if (status === 400 || status === 401 || status === 403) {
