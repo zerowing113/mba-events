@@ -1,5 +1,10 @@
 const PROXY = 'https://corsproxy.io/?';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+export const DEFAULT_MODEL = 'gemini-2.0-flash';
+
+function geminiUrl(model) {
+  return `${GEMINI_BASE}/${model}:generateContent`;
+}
 
 const EVENT_SCHEMA = `Return ONLY a valid JSON array with no explanation, markdown, or code fences.
 Each element must have exactly these fields:
@@ -27,8 +32,8 @@ function geminiError(status) {
   return new Error(`Gemini API error: HTTP ${status}`);
 }
 
-export async function testApiKey(apiKey) {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+export async function testApiKey(apiKey, model = DEFAULT_MODEL) {
+  const res = await fetch(`${geminiUrl(model)}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply with OK' }] }] }),
@@ -42,9 +47,9 @@ export async function fetchViaProxy(url) {
   return res.text();
 }
 
-export async function extractEventsFromUrl(apiKey, url) {
+export async function extractEventsFromUrl(apiKey, url, model = DEFAULT_MODEL) {
   const prompt = `Visit this URL and extract all upcoming MBA admissions events.\n${EVENT_SCHEMA}\n\nURL: ${url}`;
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+  const res = await fetch(`${geminiUrl(model)}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -67,8 +72,8 @@ export async function extractEventsFromUrl(apiKey, url) {
   }
 }
 
-export async function extractEvents(apiKey, html) {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+export async function extractEvents(apiKey, html, model = DEFAULT_MODEL) {
+  const res = await fetch(`${geminiUrl(model)}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

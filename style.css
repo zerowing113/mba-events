@@ -61,6 +61,16 @@ header p {
   margin-bottom: 0.4rem;
 }
 .api-key-row #api-key { max-width: none; flex: 1; margin-bottom: 0; }
+#model-select {
+  padding: 0.5rem 0.5rem;
+  font-size: 0.82rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  cursor: pointer;
+  white-space: nowrap;
+}
 #test-key-btn {
   padding: 0.5rem 0.9rem;
   background: #fff;

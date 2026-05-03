@@ -1,8 +1,13 @@
-import { extractEventsFromUrl, testApiKey } from './gemini.js';
+import { extractEventsFromUrl, testApiKey, DEFAULT_MODEL } from './gemini.js';
 import { eventsToCSV, mergeEvents, downloadCSV } from './csvexport.js';
 import { parseEvents } from './fetcher.js';
 
-const KEY_STORAGE = 'gemini-api-key';
+const KEY_STORAGE   = 'gemini-api-key';
+const MODEL_STORAGE = 'gemini-model';
+
+function getModel() {
+  return document.getElementById('model-select').value;
+}
 
 const TABLE_COLS = ['title', 'school', 'date', 'time', 'timezone', 'format', 'description', 'location', 'registrationUrl'];
 const TABLE_HEADS = ['Title', 'School', 'Date', 'Time', 'Timezone', 'Format', 'Description', 'Location', 'Registration URL'];
@@ -117,16 +122,16 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function scrapeWithRetry(apiKey, school, label) {
+async function scrapeWithRetry(apiKey, model, school, label) {
   try {
-    return await extractEventsFromUrl(apiKey, school.url);
+    return await extractEventsFromUrl(apiKey, school.url, model);
   } catch (err) {
     if (!err.message.toLowerCase().includes('rate limit')) throw err;
     for (let s = RETRY_DELAY_MS / 1000; s > 0; s--) {
       setProgress(`<p class="status">Rate limited — retrying ${label} in ${s}s…</p>`);
       await sleep(1000);
     }
-    return await extractEventsFromUrl(apiKey, school.url);
+    return await extractEventsFromUrl(apiKey, school.url, model);
   }
 }
 
@@ -143,6 +148,7 @@ async function runScrape() {
     return;
   }
 
+  const model = getModel();
   const btn = document.getElementById('scrape-btn');
   btn.disabled = true;
   setResults('');
@@ -155,7 +161,7 @@ async function runScrape() {
     setProgress(`<p class="status">Scraping ${label}…</p>`);
     if (i > 0) await sleep(BETWEEN_DELAY_MS);
     try {
-      const events = await scrapeWithRetry(apiKey, school, label);
+      const events = await scrapeWithRetry(apiKey, model, school, label);
       results.push({ school: school.name, events, error: null });
     } catch (err) {
       results.push({ school: school.name, events: [], error: err.message });
@@ -200,21 +206,25 @@ function renderSchoolSelect() {
 
 export function init() {
   const input = document.getElementById('api-key');
-  const saved = localStorage.getItem(KEY_STORAGE);
-  if (saved) input.value = saved;
+  const modelSelect = document.getElementById('model-select');
+
+  const savedKey   = localStorage.getItem(KEY_STORAGE);
+  const savedModel = localStorage.getItem(MODEL_STORAGE);
+  if (savedKey)   input.value = savedKey;
+  if (savedModel) modelSelect.value = savedModel;
+
   input.addEventListener('input', () => localStorage.setItem(KEY_STORAGE, input.value.trim()));
+  modelSelect.addEventListener('change', () => localStorage.setItem(MODEL_STORAGE, modelSelect.value));
+
   renderSchoolSelect();
   document.getElementById('scrape-btn').addEventListener('click', runScrape);
   document.getElementById('test-key-btn').addEventListener('click', async () => {
     const apiKey = getApiKey();
-    if (!apiKey) {
-      setKeyStatus('error', 'Enter an API key first.');
-      return;
-    }
-    setKeyStatus('pending', 'Testing…');
+    if (!apiKey) { setKeyStatus('error', 'Enter an API key first.'); return; }
+    setKeyStatus('pending', `Testing ${getModel()}…`);
     try {
-      await testApiKey(apiKey);
-      setKeyStatus('ok', 'Key valid — ready to scrape.');
+      await testApiKey(apiKey, getModel());
+      setKeyStatus('ok', `${getModel()} — key valid, ready to scrape.`);
     } catch (err) {
       setKeyStatus('error', err.message);
     }
