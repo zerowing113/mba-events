@@ -17,6 +17,25 @@ If no events are found return an empty array [].`;
 
 const EXTRACTION_PROMPT = `Extract all upcoming MBA information events from the following HTML.\n${EVENT_SCHEMA}\n\nHTML:\n`;
 
+function geminiError(status) {
+  if (status === 400 || status === 401 || status === 403) {
+    return new Error('Invalid or expired Gemini API key. Get a free key at https://aistudio.google.com/apikey');
+  }
+  if (status === 429) {
+    return new Error('Rate limit reached — wait a moment and try again, or scrape fewer schools at once.');
+  }
+  return new Error(`Gemini API error: HTTP ${status}`);
+}
+
+export async function testApiKey(apiKey) {
+  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply with OK' }] }] }),
+  });
+  if (!res.ok) throw geminiError(res.status);
+}
+
 export async function fetchViaProxy(url) {
   const res = await fetch(PROXY + encodeURIComponent(url));
   if (!res.ok) throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
@@ -34,12 +53,7 @@ export async function extractEventsFromUrl(apiKey, url) {
     }),
   });
 
-  if (!res.ok) {
-    if (res.status === 400 || res.status === 401 || res.status === 403) {
-      throw new Error('Invalid or expired Gemini API key. Get a free key at https://aistudio.google.com/apikey');
-    }
-    throw new Error(`Gemini API error: HTTP ${res.status}`);
-  }
+  if (!res.ok) throw geminiError(res.status);
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
@@ -62,12 +76,7 @@ export async function extractEvents(apiKey, html) {
     }),
   });
 
-  if (!res.ok) {
-    if (res.status === 400 || res.status === 401 || res.status === 403) {
-      throw new Error('Invalid or expired Gemini API key. Get a free key at https://aistudio.google.com/apikey');
-    }
-    throw new Error(`Gemini API error: HTTP ${res.status}`);
-  }
+  if (!res.ok) throw geminiError(res.status);
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';

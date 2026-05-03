@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchViaProxy, extractEvents, extractEventsFromUrl } from '../gemini.js';
+import { fetchViaProxy, extractEvents, extractEventsFromUrl, testApiKey } from '../gemini.js';
 
 let originalFetch;
 
@@ -91,4 +91,21 @@ test('extractEventsFromUrl throws clear message on 401 bad API key', async () =>
     () => extractEventsFromUrl('bad-key', 'https://hbs.edu/events'),
     /API key/
   );
+});
+
+const OK_RESPONSE = JSON.stringify({ candidates: [{ content: { parts: [{ text: 'OK' }] } }] });
+
+test('testApiKey resolves without throwing when Gemini returns 200', async () => {
+  globalThis.fetch = async () => ({ ok: true, json: async () => JSON.parse(OK_RESPONSE) });
+  await assert.doesNotReject(() => testApiKey('valid-key'));
+});
+
+test('testApiKey throws clear message on 401', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 401 });
+  await assert.rejects(() => testApiKey('bad-key'), /API key/);
+});
+
+test('testApiKey throws rate limit message on 429', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 429 });
+  await assert.rejects(() => testApiKey('valid-key'), /rate limit/i);
 });

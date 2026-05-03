@@ -53,6 +53,35 @@ header p {
 .scrape-section { margin-bottom: 1.5rem; }
 .api-key-section h2 { font-size: 1.1rem; margin: 0 0 0.4rem; }
 .api-key-section p  { font-size: 0.9rem; color: #555; margin: 0 0 0.6rem; }
+.api-key-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 480px;
+  margin-bottom: 0.4rem;
+}
+.api-key-row #api-key { max-width: none; flex: 1; margin-bottom: 0; }
+#test-key-btn {
+  padding: 0.5rem 0.9rem;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #1a1a1a;
+}
+#test-key-btn:hover { background: #f5f5f5; }
+.key-status {
+  display: block;
+  font-size: 0.82rem;
+  min-height: 1.2em;
+  margin-bottom: 0.4rem;
+}
+.key-status.ok      { color: #1a7a3c; }
+.key-status.error   { color: #c0392b; }
+.key-status.pending { color: #888; }
 #api-key {
   width: 100%;
   max-width: 420px;

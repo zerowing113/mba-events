@@ -1,4 +1,4 @@
-import { extractEventsFromUrl } from './gemini.js';
+import { extractEventsFromUrl, testApiKey } from './gemini.js';
 import { eventsToCSV, mergeEvents, downloadCSV } from './csvexport.js';
 import { parseEvents } from './fetcher.js';
 
@@ -183,6 +183,26 @@ export function init() {
   input.addEventListener('input', () => localStorage.setItem(KEY_STORAGE, input.value.trim()));
   renderSchoolSelect();
   document.getElementById('scrape-btn').addEventListener('click', runScrape);
+  document.getElementById('test-key-btn').addEventListener('click', async () => {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setKeyStatus('error', 'Enter an API key first.');
+      return;
+    }
+    setKeyStatus('pending', 'Testing…');
+    try {
+      await testApiKey(apiKey);
+      setKeyStatus('ok', 'Key valid — ready to scrape.');
+    } catch (err) {
+      setKeyStatus('error', err.message);
+    }
+  });
+}
+
+function setKeyStatus(type, msg) {
+  const el = document.getElementById('key-status');
+  el.textContent = msg;
+  el.className = 'key-status ' + type;
 }
 
 if (typeof document !== 'undefined') {

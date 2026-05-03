@@ -19,7 +19,11 @@
       <section class="api-key-section">
         <h2>Gemini API Key</h2>
         <p>Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>. Your key is stored only in your browser.</p>
-        <input type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+        <div class="api-key-row">
+          <input type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+          <button id="test-key-btn">Test</button>
+        </div>
+        <span id="key-status" class="key-status"></span>
       </section>
       <section id="school-select"></section>
       <section class="scrape-section">
