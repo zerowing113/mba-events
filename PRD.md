@@ -6,122 +6,157 @@ MBA applicants must manually visit each business school's website to discover up
 
 ## Solution
 
-A static web app that aggregates upcoming MBA information events across M7 schools into a single, filterable view. Users can browse events sorted by date, filter by school or format (virtual/in-person), register via a direct link to the school's own registration page, and add events to their calendar (Google Calendar or .ics download) with one click. No account required — personal tracking state lives in the browser. The event database is maintained by the curator via Airtable and served via Airtable's read-only public API to a GitHub Pages-hosted frontend.
+A static web app that aggregates upcoming MBA information events across M7 schools into a single, filterable view. Users can browse events sorted by date, filter by school or format (virtual/in-person), register via a direct link to the school's own registration page, and add events to their calendar (Google Calendar or .ics download) with one click. No account required — personal tracking state lives in the browser.
+
+Event data is stored in a static `events.csv` file in the repository. The curator refreshes it by running a local Playwright-based scraper that headlessly renders each school's events page, strips noise, and uses the Gemini API to extract structured event data. A browser-based fallback scraper (`scraper.html`) is available for end users who want to run their own extraction.
 
 ## User Stories
 
+### Applicant — Browsing & Discovery
 1. As an MBA applicant, I want to see all upcoming M7 school events in one place, so that I don't have to visit seven different school websites to stay informed.
 2. As an MBA applicant, I want events sorted by date ascending, so that I can see what's coming up soonest without manual effort.
 3. As an MBA applicant, I want to filter events by school, so that I can focus only on the schools I'm applying to.
 4. As an MBA applicant, I want to filter events by format (virtual / in-person), so that I can plan my schedule and travel accordingly.
 5. As an MBA applicant, I want to see each event's name, date, time, school, format, and a short description, so that I can quickly decide whether to attend.
-6. As an MBA applicant, I want a "Register" button on each event that opens the school's registration page in a new tab, so that I can complete official registration without losing my place in the app.
-7. As an MBA applicant, I want to add an event to Google Calendar with one click, so that I get automatic reminders without manual data entry.
-8. As an MBA applicant, I want to download an .ics file for an event, so that I can add it to Outlook, Apple Calendar, or any other calendar app.
-9. As an MBA applicant, I want the "Add to Calendar" action to pre-fill the event title, date/time, location, school name, and registration URL, so that the calendar invite is immediately useful.
-10. As an MBA applicant, I want to mark an event as "saved" or "interested," so that I can quickly find events I'm tracking across multiple visits.
-11. As an MBA applicant, I want my saved events to persist across browser sessions, so that I don't lose my tracking when I close the tab.
-12. As an MBA applicant, I want to see a badge or indicator on events I've already saved, so that I can distinguish them at a glance.
-13. As an MBA applicant, I want to filter to show only my saved events, so that I can review my personal shortlist quickly.
-14. As an MBA applicant, I want to see past events clearly distinguished (e.g., greyed out or excluded), so that I'm not confused by events I can no longer attend.
-15. As an MBA applicant, I want the app to work on mobile, so that I can check upcoming events on the go.
-16. As an MBA applicant, I want to see which school each event belongs to (with school branding or logo), so that I can identify events quickly while scanning the list.
-17. As an MBA applicant, I want to see a count of upcoming events per school, so that I can gauge which schools are most active.
-18. As an MBA applicant, I want events to load quickly without a login step, so that I can immediately start browsing.
-19. As an MBA applicant, I want a visible "last updated" timestamp, so that I know how fresh the event data is.
-20. As a curator, I want to add/edit/remove events via an Airtable spreadsheet interface, so that I can maintain the event database without touching code.
-21. As a curator, I want the live site to reflect Airtable changes quickly (within a few minutes), so that time-sensitive new events appear promptly.
-22. As a curator, I want to record event name, date, time, timezone, school, format, description, location, and registration URL per event, so that the calendar invite and event card are fully populated.
-23. As a curator, I want to mark events as published/unpublished in Airtable, so that I can stage upcoming events before making them visible.
+6. As an MBA applicant, I want past events to appear greyed out, so that I'm not confused by events I can no longer attend.
+7. As an MBA applicant, I want the app to work on mobile, so that I can check upcoming events on the go.
+8. As an MBA applicant, I want events to load instantly without a login step, so that I can immediately start browsing.
+
+### Applicant — Registration & Calendar
+9. As an MBA applicant, I want a "Register" button on each event that opens the school's registration page in a new tab, so that I can complete official registration without losing my place in the app.
+10. As an MBA applicant, I want to add an event to Google Calendar with one click, so that I get automatic reminders without manual data entry.
+11. As an MBA applicant, I want to download an .ics file for an event, so that I can add it to Outlook, Apple Calendar, or any other calendar app.
+12. As an MBA applicant, I want the calendar invite to pre-fill the event title, date/time, timezone, location, and registration URL, so that the invite is immediately useful.
+
+### Applicant — Saving & Tracking
+13. As an MBA applicant, I want to mark an event as "saved", so that I can quickly find events I'm tracking across multiple visits.
+14. As an MBA applicant, I want my saved events to persist across browser sessions, so that I don't lose my list when I close the tab.
+15. As an MBA applicant, I want to filter to show only my saved events, so that I can review my personal shortlist quickly.
+
+### Curator — Data Maintenance
+16. As a curator, I want to refresh the event database by running a single command on my PC, so that I can update all schools without manually editing CSV files.
+17. As a curator, I want the scraper to use a real browser (Playwright) so that school websites protected by Cloudflare or JavaScript rendering are handled correctly.
+18. As a curator, I want to scrape a single school at a time for testing, so that I can validate the scraper without consuming unnecessary API quota.
+19. As a curator, I want to choose which Gemini model to use, so that I can switch to a fresh quota bucket when a model's daily limit is exhausted.
+20. As a curator, I want to merge newly scraped events with the existing CSV, so that manually curated or previously scraped events are preserved unless replaced by a duplicate.
+21. As a curator, I want duplicate events (same school + date + title) to be deduplicated on merge with the existing record winning, so that manual corrections in the CSV survive re-scrapes.
+
+### Browser Scraper (End User)
+22. As an end user, I want to enter my own Gemini API key and scrape M7 events from my browser, so that I can get fresh data without relying on the curator to update the CSV.
+23. As an end user, I want to select which schools to scrape, so that I can limit API usage to the schools I care about.
+24. As an end user, I want to review and edit extracted events in a table before exporting, so that I can correct extraction errors.
+25. As an end user, I want to download a fresh CSV or merge with the live events.csv, so that I have export options for different use cases.
+26. As an end user, I want to test my API key before starting a full scrape, so that I don't waste time on a run that will fail.
 
 ## Implementation Decisions
 
 ### Modules
 
-**1. Airtable Data Fetcher**
-- Fetches the events table from Airtable's REST API using a read-only public API key
-- Normalizes raw Airtable records into a consistent event object shape: `{ id, school, title, date, time, timezone, format, description, location, registrationUrl, published }`
-- Filters out unpublished records before returning
+**1. CSV Data Fetcher (`fetcher.js`)**
+- Fetches `events.csv` from the same origin at page load
+- Parses CSV into a consistent event shape: `{ title, school, date, time, timezone, format, description, location, registrationUrl }`
 - Returns events sorted by date ascending
+- Known limitation: descriptions must not contain commas (naive comma-split parser)
 
-**2. Filter Engine**
-- Accepts the full event list plus active filter state (selected schools, selected format)
+**2. Filter Engine (`filter.js`)**
+- Pure function `filterEvents(events, { schools, format, savedOnly })` — no side effects
 - Returns a filtered subset without mutating the original list
-- Pure function — no side effects, easily testable in isolation
 
-**3. Calendar Export Module**
-- **Google Calendar**: Constructs a `https://calendar.google.com/calendar/render?action=TEMPLATE&...` URL from an event object
-- **.ics generator**: Produces a valid iCalendar string from an event object and triggers a browser download
-- Encodes event title, start/end datetime (assumes 1-hour duration if end time not provided), location, description, and URL
+**3. Calendar Export (`calendar.js`)**
+- `googleCalendarUrl(event)` — constructs Google Calendar pre-fill URL
+- `toIcs(event)` — generates iCalendar string with `DTSTART;TZID=` for correct timezone encoding
+- `downloadIcs(event)` — browser-only Blob download trigger
+- Defaults to 1-hour duration when end time is not provided
 
-**4. LocalStorage Persistence Module**
-- Stores and retrieves the set of saved event IDs
-- Exposes `save(id)`, `unsave(id)`, `isSaved(id)`, `getSavedIds()` interface
-- Handles JSON serialization and missing/corrupt localStorage gracefully
+**4. Storage (`storage.js`)**
+- `createStore(storage = localStorage)` — dependency injection for testability in Node
+- Exposes `isSaved(key)`, `save(key)`, `unsave(key)`, `getSavedKeys()`
+- Handles missing and corrupt JSON gracefully
 
-**5. UI Renderer**
-- Renders the event list from a filtered event array
-- Renders filter controls (M7 school checkboxes, virtual/in-person radio/buttons)
-- Renders each event card: school badge, title, date/time, format tag, description, Register button, Add to Calendar dropdown, Save toggle
-- Applies visual distinction to past events
-- Re-renders reactively on filter change or save toggle without full page reload
+**5. Gemini Module (`gemini.js`)**
+- `extractEvents(apiKey, text, model)` — sends page text to Gemini, parses JSON response
+- `extractEventsFromUrl(apiKey, url, model)` — uses Gemini `url_context` tool (browser scraper)
+- `testApiKey(apiKey, model)` — cheap validation call before full scrape
+- `DEFAULT_MODEL = 'gemini-2.0-flash'`; all functions accept a `model` param
+- Shared `geminiError(status)` maps 401 → "invalid key", 429 → "rate limit" with actionable messages
+
+**6. CSV Export (`csvexport.js`)**
+- `eventsToCSV(events)` — serialises event array to CSV with correct column order and comma-quoting
+- `mergeEvents(existing, scraped)` — deduplicates by `school|date|title`, existing record wins
+- `downloadCSV(filename, csvText)` — browser-only Blob download
+
+**7. Scraper UI (`scraper.js` + `scraper.html`)**
+- Renders school checkboxes from `M7_SCHOOLS` with Select all / Deselect all
+- Model dropdown (gemini-2.0-flash, gemini-2.0-flash-lite, gemini-2.5-flash-preview, gemini-3-flash-preview) — each model has its own daily free quota
+- Sequentially scrapes selected schools with a 5s inter-request delay and 20s auto-retry on 429
+- Shows extracted events in an editable table; each row deletable before export
+- "Download fresh events.csv" and "Merge with existing events.csv" export buttons
+
+**8. Local Playwright Scraper (`scripts/scrape.js`)**
+- Runs headless Chromium on the curator's PC — bypasses Cloudflare, AWS WAF, JS rendering
+- Extracts `document.body.innerText` after removing noise elements; per-school post-load wait for AJAX-populated pages
+- Calls `extractEvents` (cheap text call ~2k tokens vs ~100k for url_context)
+- Merges with existing `events.csv` by default; `--fresh` flag overwrites
+- `--school=<name>` for single-school testing; `--model=<name>` to override model
 
 ### Architecture
 
-- **No build step** — plain HTML, CSS, and vanilla JavaScript; no npm, no bundler
-- **Single-page static site** — one `index.html` with linked `style.css` and `app.js`
-- **Airtable as CMS** — events table read via Airtable REST API at page load; results cached in memory for the session
-- **GitHub Pages** for hosting — deploy by pushing to the `main` branch
-- **localStorage** for all user-specific state — no backend, no cookies, no accounts
-- **No server-side rendering** — all rendering happens in the browser after Airtable fetch
+- **No build step** — plain HTML, CSS, and ES modules; no bundler
+- **Static site on GitHub Pages** — `events.csv` in repo is the data source; update by committing a new CSV
+- **localStorage** for all user-specific state — no backend, no accounts
+- **Node.js `node:test` runner** — `npm test` runs all tests; no test framework dependency
+- **Playwright** as a dev-only dependency for the local scraper
 
-### Data Contract (Airtable → App)
+### Scraper Token Economics
 
-Airtable table name: `Events`
-
-| Field | Type | Notes |
+| Approach | Tokens/school | Daily free runs (1500 RPD) |
 |---|---|---|
-| Name | Single line text | Event title |
-| School | Single select | One of the M7 names |
-| Date | Date | YYYY-MM-DD |
-| Time | Single line text | HH:MM in local school timezone |
-| Timezone | Single line text | e.g. "America/New_York" |
-| Format | Single select | "Virtual" or "In-Person" |
-| Description | Long text | Short summary for event card |
-| Location | Single line text | Physical address or "Online" |
-| Registration URL | URL | Direct link to school registration page |
-| Published | Checkbox | Only published records appear in app |
+| `url_context` (old) | ~100k | ~2 full runs |
+| Playwright + `extractEvents` | ~2k | ~100 full runs |
+
+### School Accessibility (as of May 2026)
+
+| School | Status | URL |
+|---|---|---|
+| Harvard Business School | ✅ Accessible | `/mba/admissions/events` (needs 3s post-load wait) |
+| Wharton | ✅ Accessible | `mba.wharton.upenn.edu/mba-admissions/events/` |
+| Booth | ✅ Accessible | `chicagobooth.edu/mba/full-time/admissions/events` |
+| Kellogg | ✅ Accessible | `admissions.kellogg.northwestern.edu/portal/admissions-events` (needs 4s wait) |
+| Stanford GSB | ❌ Blocked | Varnish CDN returns 403 even for real Chrome |
+| MIT Sloan | ❌ No events URL | Events page returns 404; general events page requires JS filter interaction |
+| Columbia | ❌ Timeout | `www8.gsb.columbia.edu` consistently times out |
 
 ## Testing Decisions
 
-**What makes a good test:** Test observable output given a specific input — not internal implementation. For example, test that the Filter Engine returns the correct subset of events given filter state, not that it calls a specific internal method.
+**What makes a good test:** Test observable output through public interfaces only — not internal implementation. Tests must survive refactors of internals without changing.
 
-**Modules to test:**
+**Modules tested (53 tests):**
+- `filter.js` — school filter, format filter, combined AND logic, empty results
+- `calendar.js` — Google Calendar URL params, .ics DTSTART/DTEND encoding, 1-hour default duration
+- `fetcher.js` — CSV parse, field mapping, date sorting, empty CSV, missing fields
+- `gemini.js` — proxy routing, HTTP error handling, JSON parse, 401/429 error messages, `url_context` tool format, `testApiKey` validates and surfaces rate limit errors
+- `csvexport.js` — CSV header order, field mapping (title→Name, registrationUrl→Registration URL), comma-quoting, merge dedup logic
+- `scraper.js` — M7_SCHOOLS structure, `aggregateResults` flattening and flagging
+- `storage.js` — save/unsave/isSaved/getSavedKeys, corrupt storage gracefully handled
 
-- **Filter Engine** — highest priority; pure function with clear inputs/outputs. Test: all filters cleared returns full list; school filter returns only matching schools; format filter returns only matching format; combined filters AND correctly; empty result set handled gracefully.
-- **Calendar Export Module** — test that Google Calendar URL contains correctly encoded title, date, and URL params; test that .ics output contains required VCALENDAR/VEVENT fields and correct DTSTART/DTEND values.
-- **LocalStorage Persistence Module** — test save/unsave toggle, isSaved returns correct boolean, getSavedIds returns correct set, handles missing localStorage key without throwing.
-- **Airtable Data Fetcher** — test normalization logic against a mock API response; test that unpublished records are excluded; test that records are sorted by date ascending.
-
-**UI Renderer** — not unit tested; validate manually in browser across Chrome, Firefox, Safari, and mobile viewport.
+**Not unit tested:** `app.js` UI renderer, `scripts/scrape.js` (Playwright), `downloadIcs`/`downloadCSV` (browser-only) — validated manually.
 
 ## Out of Scope
 
 - User accounts and cross-device sync
-- Email or push notifications / reminders (handled by user's calendar app after adding event)
-- Automated web scraping of school websites
-- Schools outside the M7 (Harvard, Stanford, Wharton, Booth, Kellogg, MIT Sloan, Columbia)
-- Event registration automation (the app links to the school's page; it does not submit forms)
-- Admin dashboard UI for curation (Airtable UI serves this purpose)
+- Email or push notifications
+- Schools outside M7
+- Event registration automation
+- Admin dashboard UI
 - Search by keyword
 - Mobile app (native iOS/Android)
 - Analytics or usage tracking
 - Multi-language support
+- Automated scheduling of scrape runs (curator runs `npm run scrape` manually)
 
 ## Further Notes
 
-- The Airtable API key embedded in the frontend is read-only and accesses only public event data — no sensitive user data is ever stored server-side, mitigating the risk of embedding the key in a public GitHub repo.
-- The "one-off" deployment model means no CI/CD pipeline is needed; the curator updates Airtable and the live site reflects changes on next page load.
-- M7 schools: Harvard Business School, Stanford GSB, Wharton (UPenn), Booth (Chicago), Kellogg (Northwestern), MIT Sloan, Columbia Business School.
-- Calendar invites should default to 1-hour duration when an end time is not specified in Airtable.
-- Timezone handling is important — school events are in local school timezones (EST/CST/PST); the .ics and Google Calendar URL must encode timezone correctly to avoid showing wrong times for users in different regions.
+- Gemini free tier quotas are **per-model per-day**. When `gemini-2.0-flash` is exhausted, switch to `gemini-2.0-flash-lite` or `gemini-2.5-flash-preview` for a fresh bucket.
+- `events.csv` is intentionally committed to the repo — it serves as both the data source for the live site and a human-readable audit log of what events have been tracked.
+- The `gemini_api_key.md` file is gitignored; never commit API keys to the repo.
+- M7 = Harvard Business School, Stanford GSB, Wharton (UPenn), Booth (Chicago), Kellogg (Northwestern), MIT Sloan, Columbia Business School.
