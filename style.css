@@ -94,6 +94,34 @@ header p {
 .scrape-meta { font-size: 0.8rem; color: #666; }
 .scrape-desc { font-size: 0.85rem; color: #555; }
 
+/* School select */
+.school-select-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.school-select-header h2 { font-size: 1.1rem; margin: 0; }
+.school-select-toggles { display: flex; gap: 0.5rem; }
+.btn-text-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #666;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-text-link:hover { color: #1a1a1a; }
+.school-check-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.15rem 1rem;
+}
+
 /* Result table */
 .result-table {
   width: 100%;

@@ -104,10 +104,22 @@ function wireExportButtons() {
   });
 }
 
+function getSelectedSchools() {
+  return M7_SCHOOLS.filter(s =>
+    document.querySelector(`input[name="school"][value="${CSS.escape(s.name)}"]`)?.checked
+  );
+}
+
 async function runScrape() {
   const apiKey = getApiKey();
   if (!apiKey) {
     setResults('<p class="status error">Please enter your Gemini API key above.</p>');
+    return;
+  }
+
+  const toScrape = getSelectedSchools();
+  if (toScrape.length === 0) {
+    setResults('<p class="status error">Select at least one school.</p>');
     return;
   }
 
@@ -117,9 +129,9 @@ async function runScrape() {
 
   const results = [];
 
-  for (let i = 0; i < M7_SCHOOLS.length; i++) {
-    const school = M7_SCHOOLS[i];
-    setProgress(`<p class="status">Scraping ${school.name}… (${i + 1} of ${M7_SCHOOLS.length})</p>`);
+  for (let i = 0; i < toScrape.length; i++) {
+    const school = toScrape[i];
+    setProgress(`<p class="status">Scraping ${school.name}… (${i + 1} of ${toScrape.length})</p>`);
     try {
       const events = await extractEventsFromUrl(apiKey, school.url);
       results.push({ school: school.name, events, error: null });
@@ -136,11 +148,40 @@ async function runScrape() {
   btn.disabled = false;
 }
 
+function renderSchoolSelect() {
+  const section = document.getElementById('school-select');
+  const items = M7_SCHOOLS.map(s => `
+    <li>
+      <label class="filter-label">
+        <input type="checkbox" name="school" value="${s.name}" checked />
+        <span>${s.name}</span>
+      </label>
+    </li>`).join('');
+
+  section.innerHTML = `
+    <div class="school-select-header">
+      <h2>Schools</h2>
+      <div class="school-select-toggles">
+        <button id="btn-select-all" class="btn-text-link">Select all</button>
+        <button id="btn-deselect-all" class="btn-text-link">Deselect all</button>
+      </div>
+    </div>
+    <ul class="school-check-list">${items}</ul>`;
+
+  document.getElementById('btn-select-all').addEventListener('click', () => {
+    section.querySelectorAll('input[name="school"]').forEach(cb => { cb.checked = true; });
+  });
+  document.getElementById('btn-deselect-all').addEventListener('click', () => {
+    section.querySelectorAll('input[name="school"]').forEach(cb => { cb.checked = false; });
+  });
+}
+
 export function init() {
   const input = document.getElementById('api-key');
   const saved = localStorage.getItem(KEY_STORAGE);
   if (saved) input.value = saved;
   input.addEventListener('input', () => localStorage.setItem(KEY_STORAGE, input.value.trim()));
+  renderSchoolSelect();
   document.getElementById('scrape-btn').addEventListener('click', runScrape);
 }
 
