@@ -1,6 +1,11 @@
 import { fetchViaProxy, extractEvents } from './gemini.js';
+import { eventsToCSV, mergeEvents, downloadCSV } from './csvexport.js';
+import { parseEvents } from './fetcher.js';
 
 const KEY_STORAGE = 'gemini-api-key';
+
+const TABLE_COLS = ['title', 'school', 'date', 'time', 'timezone', 'format', 'description', 'location', 'registrationUrl'];
+const TABLE_HEADS = ['Title', 'School', 'Date', 'Time', 'Timezone', 'Format', 'Description', 'Location', 'Registration URL'];
 
 export const M7_SCHOOLS = [
   { name: 'Harvard Business School',  url: 'https://www.hbs.edu/mba/admissions/pages/events.aspx' },
@@ -48,17 +53,55 @@ function renderSummary(summary, totalCount) {
     <ul class="summary-list">${rows}</ul>`;
 }
 
-function renderEventList(events) {
+function renderResultTable(events) {
   if (events.length === 0) return '';
+  const headCells = TABLE_HEADS.map(h => `<th>${h}</th>`).join('') + '<th></th>';
+  const rows = events.map(e => {
+    const cells = TABLE_COLS.map(k => `<td contenteditable="true">${e[k] ?? ''}</td>`).join('');
+    return `<tr>${cells}<td><button class="btn-del-row" aria-label="Delete row">✕</button></td></tr>`;
+  }).join('');
   return `
-    <ul class="scrape-list">
-      ${events.map(e => `
-        <li class="scrape-item">
-          <strong>${e.title}</strong>
-          <span class="scrape-meta">${e.school} &middot; ${e.date} ${e.time} &middot; ${e.format}</span>
-          <span class="scrape-desc">${e.description}</span>
-        </li>`).join('')}
-    </ul>`;
+    <table class="result-table">
+      <thead><tr>${headCells}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="export-actions">
+      <button id="btn-fresh-csv">Download fresh events.csv</button>
+      <button id="btn-merge-csv">Merge with existing events.csv</button>
+    </div>`;
+}
+
+function readTableEvents() {
+  const tbody = document.querySelector('.result-table tbody');
+  if (!tbody) return [];
+  return Array.from(tbody.querySelectorAll('tr')).map(row => {
+    const cells = row.querySelectorAll('td[contenteditable]');
+    return Object.fromEntries(TABLE_COLS.map((k, i) => [k, cells[i]?.textContent.trim() ?? '']));
+  });
+}
+
+function wireExportButtons() {
+  document.getElementById('btn-fresh-csv')?.addEventListener('click', () => {
+    downloadCSV('events.csv', eventsToCSV(readTableEvents()));
+  });
+
+  document.getElementById('btn-merge-csv')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('events.csv');
+      const existing = res.ok ? parseEvents(await res.text()) : [];
+      const scraped = readTableEvents();
+      downloadCSV('events.csv', eventsToCSV(mergeEvents(existing, scraped)));
+    } catch {
+      alert('Could not fetch existing events.csv. Downloading fresh CSV instead.');
+      downloadCSV('events.csv', eventsToCSV(readTableEvents()));
+    }
+  });
+
+  document.querySelector('.result-table tbody')?.addEventListener('click', e => {
+    if (e.target.classList.contains('btn-del-row')) {
+      e.target.closest('tr').remove();
+    }
+  });
 }
 
 async function runScrape() {
@@ -89,7 +132,8 @@ async function runScrape() {
 
   setProgress('');
   const { allEvents, summary } = aggregateResults(results);
-  setResults(renderSummary(summary, allEvents.length) + renderEventList(allEvents));
+  setResults(renderSummary(summary, allEvents.length) + renderResultTable(allEvents));
+  wireExportButtons();
   btn.disabled = false;
 }
 

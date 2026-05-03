@@ -94,6 +94,75 @@ header p {
 .scrape-meta { font-size: 0.8rem; color: #666; }
 .scrape-desc { font-size: 0.85rem; color: #555; }
 
+/* Result table */
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  display: block;
+}
+.result-table th {
+  background: #f0f0f0;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e5e5e5;
+  white-space: nowrap;
+}
+.result-table td {
+  border: 1px solid #e5e5e5;
+  padding: 0.35rem 0.5rem;
+  vertical-align: top;
+  min-width: 80px;
+  max-width: 220px;
+  word-break: break-word;
+}
+.result-table td[contenteditable]:focus {
+  outline: 2px solid #1a1a1a;
+  background: #fffef0;
+}
+.btn-del-row {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  line-height: 1;
+}
+.btn-del-row:hover { color: #c0392b; }
+
+/* Export actions */
+.export-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.export-actions button {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #1a1a1a;
+  transition: background 0.15s;
+}
+.export-actions button:hover { background: #f0f0f0; }
+.export-actions button:first-child {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+.export-actions button:first-child:hover { background: #333; }
+
 /* Layout */
 #app {
   display: grid;
