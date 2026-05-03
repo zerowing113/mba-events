@@ -110,6 +110,26 @@ function getSelectedSchools() {
   );
 }
 
+const BETWEEN_DELAY_MS = 5_000;
+const RETRY_DELAY_MS   = 20_000;
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function scrapeWithRetry(apiKey, school, label) {
+  try {
+    return await extractEventsFromUrl(apiKey, school.url);
+  } catch (err) {
+    if (!err.message.toLowerCase().includes('rate limit')) throw err;
+    for (let s = RETRY_DELAY_MS / 1000; s > 0; s--) {
+      setProgress(`<p class="status">Rate limited — retrying ${label} in ${s}s…</p>`);
+      await sleep(1000);
+    }
+    return await extractEventsFromUrl(apiKey, school.url);
+  }
+}
+
 async function runScrape() {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -131,9 +151,11 @@ async function runScrape() {
 
   for (let i = 0; i < toScrape.length; i++) {
     const school = toScrape[i];
-    setProgress(`<p class="status">Scraping ${school.name}… (${i + 1} of ${toScrape.length})</p>`);
+    const label = `${school.name} (${i + 1} of ${toScrape.length})`;
+    setProgress(`<p class="status">Scraping ${label}…</p>`);
+    if (i > 0) await sleep(BETWEEN_DELAY_MS);
     try {
-      const events = await extractEventsFromUrl(apiKey, school.url);
+      const events = await scrapeWithRetry(apiKey, school, label);
       results.push({ school: school.name, events, error: null });
     } catch (err) {
       results.push({ school: school.name, events: [], error: err.message });
