@@ -20,3 +20,11 @@ test('scraper.html links style.css', () => {
 test('index.html links to scraper.html', () => {
   assert.match(index(), /href=["']scraper\.html["']/);
 });
+
+test('scraper.html has a scrape button', () => {
+  assert.match(scraper(), /id=["']scrape-btn["']/);
+});
+
+test('scraper.js loads without throwing', async () => {
+  await assert.doesNotReject(import('../scraper.js'));
+});
