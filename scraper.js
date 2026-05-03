@@ -1,7 +1,27 @@
 import { fetchViaProxy, extractEvents } from './gemini.js';
 
 const KEY_STORAGE = 'gemini-api-key';
-const HBS_URL = 'https://www.hbs.edu/mba/admissions/pages/events.aspx';
+
+export const M7_SCHOOLS = [
+  { name: 'Harvard Business School',  url: 'https://www.hbs.edu/mba/admissions/pages/events.aspx' },
+  { name: 'Stanford GSB',             url: 'https://www.gsb.stanford.edu/programs/mba/admissions/events' },
+  { name: 'Wharton',                  url: 'https://mba.wharton.upenn.edu/mba-admissions/events/' },
+  { name: 'Booth',                    url: 'https://www.chicagobooth.edu/mba/full-time/admissions/events' },
+  { name: 'Kellogg',                  url: 'https://www.kellogg.northwestern.edu/programs/full-time-mba/admissions/visit.aspx' },
+  { name: 'MIT Sloan',                url: 'https://mitsloan.mit.edu/mba/admissions/events' },
+  { name: 'Columbia Business School', url: 'https://home.gsb.columbia.edu/mba/admissions/events' },
+];
+
+export function aggregateResults(results) {
+  const allEvents = results.flatMap(r => r.events);
+  const summary = results.map(r => ({
+    school: r.school,
+    count: r.events.length,
+    error: r.error ?? null,
+    flagged: r.error !== null || r.events.length === 0,
+  }));
+  return { allEvents, summary };
+}
 
 function getApiKey() {
   return document.getElementById('api-key').value.trim();
@@ -15,13 +35,22 @@ function setResults(html) {
   document.getElementById('results').innerHTML = html;
 }
 
+function renderSummary(summary, totalCount) {
+  const rows = summary.map(s => {
+    const flag = s.flagged ? ' ⚠' : '';
+    const detail = s.error ? `<span class="scrape-error">${s.error}</span>`
+                           : `${s.count} event${s.count !== 1 ? 's' : ''}`;
+    return `<li class="summary-row${s.flagged ? ' flagged' : ''}">${s.school}${flag}: ${detail}</li>`;
+  }).join('');
+
+  return `
+    <p class="scrape-count">${totalCount} event${totalCount !== 1 ? 's' : ''} extracted across ${summary.filter(s => !s.flagged).length} schools</p>
+    <ul class="summary-list">${rows}</ul>`;
+}
+
 function renderEventList(events) {
-  if (events.length === 0) {
-    setResults('<p class="status">No events found. The page structure may have changed — try again or check the HBS events page manually.</p>');
-    return;
-  }
-  setResults(`
-    <p class="scrape-count">${events.length} event${events.length !== 1 ? 's' : ''} extracted</p>
+  if (events.length === 0) return '';
+  return `
     <ul class="scrape-list">
       ${events.map(e => `
         <li class="scrape-item">
@@ -29,8 +58,7 @@ function renderEventList(events) {
           <span class="scrape-meta">${e.school} &middot; ${e.date} ${e.time} &middot; ${e.format}</span>
           <span class="scrape-desc">${e.description}</span>
         </li>`).join('')}
-    </ul>
-  `);
+    </ul>`;
 }
 
 async function runScrape() {
@@ -43,23 +71,26 @@ async function runScrape() {
   const btn = document.getElementById('scrape-btn');
   btn.disabled = true;
   setResults('');
-  setProgress('<p class="status">Fetching HBS events page…</p>');
 
-  try {
-    const html = await fetchViaProxy(HBS_URL);
-    setProgress('<p class="status">Extracting events with Gemini…</p>');
-    const events = await extractEvents(apiKey, html);
-    setProgress('');
-    renderEventList(events);
-  } catch (err) {
-    setProgress('');
-    const msg = err.message.includes('API key')
-      ? err.message
-      : `Failed to scrape HBS events: ${err.message}`;
-    setResults(`<p class="status error">${msg}</p>`);
-  } finally {
-    btn.disabled = false;
+  const results = [];
+
+  for (let i = 0; i < M7_SCHOOLS.length; i++) {
+    const school = M7_SCHOOLS[i];
+    setProgress(`<p class="status">Scraping ${school.name}… (${i + 1} of ${M7_SCHOOLS.length})</p>`);
+    try {
+      const html = await fetchViaProxy(school.url);
+      const events = await extractEvents(apiKey, html);
+      results.push({ school: school.name, events, error: null });
+    } catch (err) {
+      results.push({ school: school.name, events: [], error: err.message });
+      if (err.message.includes('API key')) break;
+    }
   }
+
+  setProgress('');
+  const { allEvents, summary } = aggregateResults(results);
+  setResults(renderSummary(summary, allEvents.length) + renderEventList(allEvents));
+  btn.disabled = false;
 }
 
 export function init() {
